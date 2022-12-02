@@ -1,0 +1,244 @@
+---
+title: "CGN Data Lansdcape"
+author: "Connor Flynn"
+date: "12/1/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(janitor)
+library(dplyr)
+library(RColorBrewer)
+library(stringr)
+```
+
+
+```{r}
+data <- read_csv(here("CGN_Survey_Responses.csv"))
+```
+
+```{r}
+data <- data %>% 
+  clean_names()
+```
+
+
+
+```{r}
+data_split <- data %>% 
+    mutate(does_your_cifal_have_regular_access_to_the_following_personnel_human_resources_please_check_all_that_apply = strsplit(as.character(does_your_cifal_have_regular_access_to_the_following_personnel_human_resources_please_check_all_that_apply), ",")) %>% 
+    unnest(does_your_cifal_have_regular_access_to_the_following_personnel_human_resources_please_check_all_that_apply)
+```
+
+
+```{r}
+data_split <- data_split %>% 
+    mutate(which_of_the_following_types_of_data_products_does_your_cifal_produce_provide = strsplit(as.character(which_of_the_following_types_of_data_products_does_your_cifal_produce_provide), ",")) %>% 
+    unnest(which_of_the_following_types_of_data_products_does_your_cifal_produce_provide)
+```
+
+
+```{r}
+data_split <- data_split %>% 
+    mutate(which_channels_of_communication_does_your_cifal_use_to_disseminate_data_and_data_products = strsplit(as.character(which_channels_of_communication_does_your_cifal_use_to_disseminate_data_and_data_products), ",")) %>% 
+    unnest(which_channels_of_communication_does_your_cifal_use_to_disseminate_data_and_data_products)
+```
+
+
+```{r}
+data_split <- data_split %>% 
+  select(-at_your_cifal_what_are_the_three_biggest_barriers_to_effective_data_use, -at_your_cifal_what_are_the_three_most_important_questions_you_want_to_use_data_to_answer)
+```
+
+```{r}
+data_split$does_your_cifal_have_regular_access_to_the_following_personnel_human_resources_please_check_all_that_apply <- str_trim(data_split$does_your_cifal_have_regular_access_to_the_following_personnel_human_resources_please_check_all_that_apply)
+```
+
+
+
+```{r}
+human_resources_by_cifal <- data_split %>% 
+  group_by(which_cifal_do_you_represent, does_your_cifal_have_regular_access_to_the_following_personnel_human_resources_please_check_all_that_apply) %>% 
+  summarise(count = n_distinct(does_your_cifal_have_regular_access_to_the_following_personnel_human_resources_please_check_all_that_apply))
+
+
+```
+
+```{r}
+human_resources_by_cifal = human_resources_by_cifal[-c(46),]
+```
+
+
+```{r}
+human_resources <-  human_resources_by_cifal %>% 
+  group_by(does_your_cifal_have_regular_access_to_the_following_personnel_human_resources_please_check_all_that_apply) %>%  
+  summarise(sum = sum(count))
+  
+```
+
+```{r}
+ggplot(data = human_resources, aes(x = reorder(does_your_cifal_have_regular_access_to_the_following_personnel_human_resources_please_check_all_that_apply, sum),
+                                   y = sum)) +
+  geom_bar(stat = "identity", fill = "skyblue4") +
+  theme_minimal() +
+  coord_flip() +
+  labs(title = "CGN Personnel Access",
+       x = "Personnel Type",
+       y = "Number of CIFAL's with Access to Personnel")
+```
+
+```{r}
+ggplot(data = human_resources_by_cifal, aes(x = reorder(which_cifal_do_you_represent, count),
+                                   y = count, 
+                                   fill = does_your_cifal_have_regular_access_to_the_following_personnel_human_resources_please_check_all_that_apply)) +
+  geom_bar(stat = "identity", position = "stack") +
+  theme_minimal() +
+  coord_flip() +
+  scale_fill_brewer(palette="Set3")
+  
+```
+```{r}
+data_split$which_of_the_following_types_of_data_products_does_your_cifal_produce_provide <- str_trim(data_split$which_of_the_following_types_of_data_products_does_your_cifal_produce_provide)
+```
+
+
+```{r}
+data_products_by_cifal <- data_split %>% 
+  group_by(which_cifal_do_you_represent, which_of_the_following_types_of_data_products_does_your_cifal_produce_provide) %>% 
+  summarise(count = n_distinct(which_of_the_following_types_of_data_products_does_your_cifal_produce_provide))
+
+
+```
+
+
+```{r}
+data_products_by_cifal <-  data_products_by_cifal %>% 
+  group_by(which_of_the_following_types_of_data_products_does_your_cifal_produce_provide) %>%  
+  summarise(sum = sum(count))
+  
+```
+
+```{r}
+ggplot(data = data_products_by_cifal, aes(x = reorder(which_of_the_following_types_of_data_products_does_your_cifal_produce_provide, sum),
+                                   y = sum)) +
+  geom_bar(stat = "identity", fill = "skyblue4") +
+  theme_minimal() +
+  coord_flip() +
+  labs(title = "CGN Data Products",
+       x = "Data Product",
+       y = "Number of CIFAL's Providing Data Product")
+```
+
+
+```{r}
+data_split$which_channels_of_communication_does_your_cifal_use_to_disseminate_data_and_data_products <- str_trim(data_split$which_channels_of_communication_does_your_cifal_use_to_disseminate_data_and_data_products)
+```
+
+
+```{r}
+data_communication_by_cifal <- data_split %>% 
+  group_by(which_cifal_do_you_represent, which_channels_of_communication_does_your_cifal_use_to_disseminate_data_and_data_products) %>% 
+  summarise(count = n_distinct(which_channels_of_communication_does_your_cifal_use_to_disseminate_data_and_data_products))
+
+
+```
+
+
+```{r}
+data_communication_by_cifal <-  data_communication_by_cifal %>% 
+  group_by(which_channels_of_communication_does_your_cifal_use_to_disseminate_data_and_data_products) %>%  
+  summarise(sum = sum(count))
+  
+```
+
+```{r}
+ggplot(data = data_communication_by_cifal, aes(x = reorder(which_channels_of_communication_does_your_cifal_use_to_disseminate_data_and_data_products, sum),
+                                   y = sum)) +
+  geom_bar(stat = "identity", fill = "skyblue4") +
+  theme_minimal() +
+  coord_flip() +
+  labs(title = "CGN Data Communication",
+       x = "Method of Communication",
+       y = "Number of CIFAL's Utilizing Method of Communication")
+```
+```{r}
+data_split_longer <- data_split %>% 
+  select(which_cifal_do_you_represent, describe_your_cifa_ls_internal_capacity_for_each_of_the_following_parts_of_the_research_data_lifecycle_plan_fund_a_study, 
+                        describe_your_cifa_ls_internal_capacity_for_each_of_the_following_parts_of_the_research_data_lifecycle_collect_analyze,
+                        describe_your_cifa_ls_internal_capacity_for_each_of_the_following_parts_of_the_research_data_lifecycle_discover_re_use,
+                        describe_your_cifa_ls_internal_capacity_for_each_of_the_following_parts_of_the_research_data_lifecycle_preserve_store,
+                        describe_your_cifa_ls_internal_capacity_for_each_of_the_following_parts_of_the_research_data_lifecycle_publish_share)
+```
+
+
+
+
+```{r}
+data_split_longer <- data_split_longer %>% 
+  pivot_longer(cols = c(describe_your_cifa_ls_internal_capacity_for_each_of_the_following_parts_of_the_research_data_lifecycle_plan_fund_a_study, 
+                        describe_your_cifa_ls_internal_capacity_for_each_of_the_following_parts_of_the_research_data_lifecycle_collect_analyze,
+                        describe_your_cifa_ls_internal_capacity_for_each_of_the_following_parts_of_the_research_data_lifecycle_discover_re_use,
+                        describe_your_cifa_ls_internal_capacity_for_each_of_the_following_parts_of_the_research_data_lifecycle_preserve_store,
+                        describe_your_cifa_ls_internal_capacity_for_each_of_the_following_parts_of_the_research_data_lifecycle_publish_share
+                        ), values_to = "lifecycle_capacity", names_to = "lifecycle_segment")
+```
+
+```{r}
+data_split_longer["lifecycle_segment"][data_split_longer["lifecycle_segment"] == "describe_your_cifa_ls_internal_capacity_for_each_of_the_following_parts_of_the_research_data_lifecycle_plan_fund_a_study"] <- "Plan & Fund Study"
+
+data_split_longer["lifecycle_segment"][data_split_longer["lifecycle_segment"] == "describe_your_cifa_ls_internal_capacity_for_each_of_the_following_parts_of_the_research_data_lifecycle_collect_analyze"] <- "Collect & Analyze"
+
+data_split_longer["lifecycle_segment"][data_split_longer["lifecycle_segment"] == "describe_your_cifa_ls_internal_capacity_for_each_of_the_following_parts_of_the_research_data_lifecycle_discover_re_use"] <- "Discover & Reuse"
+
+data_split_longer["lifecycle_segment"][data_split_longer["lifecycle_segment"] == "describe_your_cifa_ls_internal_capacity_for_each_of_the_following_parts_of_the_research_data_lifecycle_preserve_store"] <- "Preserve & Store"
+
+data_split_longer["lifecycle_segment"][data_split_longer["lifecycle_segment"] == "describe_your_cifa_ls_internal_capacity_for_each_of_the_following_parts_of_the_research_data_lifecycle_publish_share"] <- "Publish & Share"
+
+
+```
+
+
+```{r}
+data_split_longer <- unique(data_split_longer)
+```
+
+```{r}
+data_split_longer <- data_split_longer %>% 
+  group_by(lifecycle_segment, lifecycle_capacity) %>% 
+  count()
+  
+```
+
+```{r}
+data_split_longer = data_split_longer[-c(15),]
+```
+
+```{r}
+data_split_longer$lifecycle_capacity <- factor(data_split_longer$lifecycle_capacity, levels = c("Extensive capacity", "Moderate capacity", "Minimal internal capacity"))
+```
+
+
+```{r}
+ggplot(data = data_split_longer, aes(fill = lifecycle_capacity, y=n, x=lifecycle_segment)) + 
+    geom_bar(position="dodge", stat="identity") + 
+  coord_flip() + 
+  theme_minimal()+
+  labs(title = "CGN Research Data Lifecycle",
+       x = "Stage of Research Data Lifecycle",
+       y = "Number of CIFAL's by Capacity for Research Data Lifecycle") +
+  scale_fill_manual(values = c("skyblue4", "goldenrod3", "coral4"))
+```
+```{r}
+training <- data_split %>% 
+  group_by(which_cifal_do_you_represent, my_cifal_currently_needs_training_in_data_analytics_to_advance_progress_of_the_sd_gs) %>% 
+  summarise(count = n_distinct(my_cifal_currently_needs_training_in_data_analytics_to_advance_progress_of_the_sd_gs))
+```
+
+```{r}
+training_provide <- data_split %>% 
+  group_by(which_cifal_do_you_represent, my_cifal_is_currently_in_a_position_to_train_data_analysts_to_advance_progress_of_the_sd_gs) %>% 
+  summarise(count = n_distinct(my_cifal_is_currently_in_a_position_to_train_data_analysts_to_advance_progress_of_the_sd_gs))
+```
